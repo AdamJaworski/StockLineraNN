@@ -1,86 +1,71 @@
 import torch
-import torch.nn as nn
-import os
-import numpy as np
+import torch.optim as optim
+from dataset import Dataset
 from model import Model
 from custom_loss import CustomLoss
 from train_options import opt
 from PathManager import PathManager
 import pathlib
 from datetime import datetime
+import random
 
 data_csv = r'./Data/'
 
-"""
-created for csv format:
-time,open,high,low,close,Volume,Color,Plot
-"""
-
 
 def train_model(model: Model, loss_fn):
-    csv_list = os.listdir(data_csv)
-    optimizer = torch.optim.Adam(model.parameters(), lr=opt.LR)
+    optimizer         = torch.optim.Adam(model.parameters(), lr=opt.LR)
+    scheduler         = optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min', factor=0.5, patience=3)
+    dataset           = Dataset(data_csv)
     finished_process  = 0
     finished_process_ = 0
     epoch             = opt.STARTING_EPOCH
     running_loss      = 0.0
+    epoch_loss        = 0.0
     highest_loss      = 0
     lowest_loss       = 10000
+    interation        = [*range(dataset.size)]
 
     while True:
-        print(f"Starting epoch: {epoch}")
-        np.random.shuffle(csv_list)
+        print(f"Starting epoch {epoch} with lr {optimizer.param_groups[0]['lr']}")
+        random.shuffle(interation)
 
-        if epoch > 0:
-            print(f"Changing LR from: {opt.LR} to {opt.LR / (opt.LR_DROPOFF * epoch)}")
-            optimizer = torch.optim.Adam(model.parameters(), lr=opt.LR / (opt.LR_DROPOFF * epoch))
+        for i in interation:
+            input_tensor, correct_tensor = dataset.get(i)
+            optimizer.zero_grad()
 
-        for csv in csv_list:
-            full_data_list = []
-            csv_data = np.loadtxt(data_csv + csv, delimiter=',', dtype=str)
-            print(csv)
-            for index, row in enumerate(csv_data):
-                if index == 0:
-                    continue
-                full_data_list.append(row[1:6].astype('float32'))
-            full_data_list = np.array(full_data_list)
+            input_tensor = input_tensor.unsqueeze(0)
+            output_tensor = model(input_tensor)
+            output_tensor = output_tensor.squeeze(0)
+            loss = loss_fn(output_tensor, correct_tensor)
 
-            # Iterating threw csv
-            input_array = full_data_list[0:50]
-            for i in range(50, len(full_data_list)):
-                input_tensor = torch.from_numpy(input_array).unsqueeze(0)
-                correct_tensor = torch.from_numpy(full_data_list[i])
+            loss.backward()
+            optimizer.step()
 
-                optimizer.zero_grad()
+            running_loss += loss.item()
+            epoch_loss   += loss.item()
+            finished_process += 1
+            finished_process_ += 1
 
-                output_tensor = model(input_tensor)
-                output_tensor = output_tensor.squeeze(0)
-                loss = loss_fn(output_tensor, correct_tensor)
+            if loss.item() < lowest_loss:
+                lowest_loss = loss.item()
 
-                loss.backward()
-                optimizer.step()
+            if loss.item() > highest_loss:
+                highest_loss = loss.item()
 
-                running_loss += loss.item()
-                finished_process += 1
-                finished_process_ += 1
-                input_array = full_data_list[(i - 49): (i + 1)]
+            if loss.item() < 0.2:
+                print(f"Loss: {loss.item():.2f}, Output: {output_tensor.detach().numpy()},   GT: {correct_tensor.numpy()}")
 
-                if loss.item() < lowest_loss:
-                    lowest_loss = loss.item()
+            if finished_process % opt.PRINT_RESULTS == 0:
+                print_state(epoch, finished_process, running_loss, finished_process_, highest_loss, lowest_loss)
+                finished_process_, running_loss, highest_loss, lowest_loss = 0, 0, 0, 10000
 
-                if loss.item() > highest_loss:
-                    highest_loss = loss.item()
+            if finished_process % opt.SAVE_MODEL_AFTER == 0:
+                save_model(model, str(finished_process))
 
-                if loss.item() < 5:
-                    print(f"Loss: {loss.item():.2f}, Output: {output_tensor.detach().numpy()},   GT: {correct_tensor.numpy()}")
-
-                if finished_process % opt.PRINT_RESULTS == 0:
-                    print_state(epoch, finished_process, running_loss, finished_process_, highest_loss, lowest_loss)
-                    finished_process_, running_loss, highest_loss, lowest_loss = 0, 0, 0, 10000
-
-                if finished_process % opt.SAVE_MODEL_AFTER == 0:
-                    save_model(model, str(finished_process))
-
+        avg_loss_epoch = epoch_loss / dataset.size
+        print(f"EOE {epoch}. Avg loss {avg_loss_epoch:.2f}")
+        scheduler.step(avg_loss_epoch)
+        epoch_loss = 0.0
         epoch += 1
 
 
@@ -118,5 +103,4 @@ if __name__ == "__main__":
     loss_file.write(start_message + '\n')
     loss_file.close()
 
-    print(f"Starting training with rate: {opt.LR}")
     train_model(model, CustomLoss())

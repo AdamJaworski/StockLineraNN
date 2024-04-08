@@ -1,23 +1,15 @@
-import torch.nn as nn
 import torch
+import torch.nn as nn
 
 
 class CustomLoss(nn.Module):
-    def __init__(self):
+    def __init__(self, epsilon=1e-8):
         super(CustomLoss, self).__init__()
+        self.epsilon = epsilon
 
     def forward(self, output, target):
-        open_output,  open_target  = output[0], target[0]
-        high_output,  high_target  = output[1], target[1]
-        low_output,   low_target   = output[2], target[2]
-        close_output, close_target = output[3], target[3]
-        vol_output,   vol_target   = output[4], target[4]
-
-        close_difference = abs(close_output - close_target) / close_target
-        open_difference  = abs(open_output  - open_target)  / open_target
-        high_difference  = abs(high_output  - high_target)  / high_target
-        low_difference   = abs(low_output   - low_target)   / low_target
-        vol_difference   = abs(vol_output   - vol_target)   / vol_target
-
-        loss = (500 * close_difference) + (300 * open_difference) + (80 * high_difference) + (80 * low_difference) + (40 * vol_difference)
-        return loss.mean()
+        differences = torch.abs(output - target) / (target + self.epsilon)
+        weights = torch.tensor([30, 8, 8, 50, 4], device=output.device)
+        weighted_diff = differences * weights
+        loss = weighted_diff.mean()
+        return loss
