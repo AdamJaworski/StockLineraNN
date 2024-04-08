@@ -13,9 +13,9 @@ def add_argument(**kwargs):
 
 add_argument(SAVE_MODEL_AFTER=1000)
 add_argument(PRINT_RESULTS=1000)
-add_argument(CONTINUE_LEARNING=True)
+add_argument(CONTINUE_LEARNING=False)
 add_argument(LOAD_SETTINGS=True) # TODO
-add_argument(MODEL='Gamma')
+add_argument(MODEL='Alpha2')
 add_argument(LR=1e-2)
 add_argument(LR_DROPOFF_FACTOR=0.5)
 add_argument(STARTING_EPOCH=0)

@@ -9,7 +9,7 @@ class CustomLoss(nn.Module):
 
     def forward(self, output, target):
         differences = torch.abs(output - target) / (target + self.epsilon)
-        weights = torch.tensor([30, 8, 8, 50, 4], device=output.device)
+        weights = torch.tensor([40, 60], device=output.device)
         weighted_diff = differences * weights
         loss = weighted_diff.mean()
         return loss
