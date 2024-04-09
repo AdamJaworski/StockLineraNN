@@ -1,5 +1,7 @@
 import matplotlib.pyplot as plt
 from train_options import opt
+import numpy as np
+
 
 iterations = []
 a_loss = []
@@ -16,16 +18,30 @@ with open(file_path, 'r') as file:
             h_loss.append(float(parts[9].rstrip(',')))
             l_loss.append(float(parts[11]))
 
-# Re-plotting with the corrected data
-iterations = [*range(0, len(a_loss)*opt.PRINT_RESULTS, opt.PRINT_RESULTS)]
 
-plt.figure(figsize=(14, 8))
-plt.plot(iterations, a_loss, label='a_loss', marker='o')
-# plt.plot(iterations, h_loss, label='h_loss', marker='x')
-# plt.plot(iterations, l_loss, label='l_loss', marker='^')
-plt.xlabel('Iterations')
-plt.ylabel('Loss Value')
-plt.title('Losses over Iterations')
-plt.legend()
-plt.grid(True)
-plt.show()
+def plot_data(data):
+    # Re-plotting with the corrected data
+    iterations = [*range(0, len(data)*opt.PRINT_RESULTS, opt.PRINT_RESULTS)]
+
+    iterations = iterations[1:]
+    data     = data[1:]
+
+    plt.figure(figsize=(14, 8))
+    plt.plot(iterations, data, label='a_loss', marker='o')
+    # plt.plot(iterations, h_loss, label='h_loss', marker='x')
+    # plt.plot(iterations, l_loss, label='l_loss', marker='^')
+    plt.xlabel('Iterations')
+    plt.ylabel('Loss Value')
+    plt.title('Losses over Iterations')
+
+    z = np.polyfit(iterations, data, 1)
+    p = np.poly1d(z)
+
+    plt.plot(iterations, p(iterations))
+
+    plt.legend()
+    plt.grid(True)
+    plt.show()
+
+
+plot_data(a_loss)

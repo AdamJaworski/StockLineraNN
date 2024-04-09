@@ -58,8 +58,8 @@ def train_model(model: Model, loss_fn):
             if loss.item() > highest_loss:
                 highest_loss = loss.item()
 
-            if loss.item() < 0.01:
-                print(f"Loss: {loss.item():.3f}, Output: {output_tensor.detach().numpy()}, GT: {correct_tensor.numpy()}")
+            if loss.item() < 0.005 and correct_tensor.numpy().all() != 0:
+                print(f"Loss: {loss.item():.4f}, Output: {output_tensor.detach().numpy()}, GT: {correct_tensor.numpy()}")
 
             if finished_process % opt.PRINT_RESULTS == 0:
                 print_state(epoch, finished_process, running_loss, finished_process_, highest_loss, lowest_loss, optimizer.param_groups[0]['lr'])
@@ -69,7 +69,7 @@ def train_model(model: Model, loss_fn):
                 save_model(model, str(finished_process))
 
         avg_loss_epoch = epoch_loss / dataset.size
-        print(f"EOE {epoch}. Avg loss {avg_loss_epoch:.2f}")
+        print(f"EOE {epoch}. Avg loss {avg_loss_epoch:.4f}")
         scheduler.step(avg_loss_epoch)
         epoch_loss = 0.0
         finished_process_, running_loss, highest_loss, lowest_loss = 0, 0, 0, 10000

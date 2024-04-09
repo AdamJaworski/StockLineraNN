@@ -1,7 +1,7 @@
 import os
 import sys
 import time
-
+from train_options import opt
 import numpy as np
 import torch
 import utilities
@@ -45,8 +45,8 @@ class Dataset:
             # so for example {0,02 0,025 -0,01 0,22 50}
             # only rsi is in range 0-100, rest is in %
 
-            open_price, close_price = full_csv_data[150][0], full_csv_data[150][3]
-            input_tensor = torch.from_numpy(np.array(full_csv_data[0:150], dtype=np.float32))
+            open_price, close_price = full_csv_data[opt.CANDLE_INPUT][0], full_csv_data[opt.CANDLE_INPUT][3]
+            input_tensor = torch.from_numpy(np.array(full_csv_data[0:opt.CANDLE_INPUT], dtype=np.float32))
             answer_tensor = torch.from_numpy(np.array([open_price, close_price], dtype=np.float32))
             self.input_list.append(input_tensor)
             self.gt_list.append(answer_tensor)
@@ -54,9 +54,9 @@ class Dataset:
             self.total_size += sys.getsizeof(input_tensor)
             self.total_size += sys.getsizeof(answer_tensor)
 
-            for i in range(151, len(full_csv_data)):
+            for i in range(opt.CANDLE_INPUT + 1, len(full_csv_data)):
                 open_price, close_price = full_csv_data[i][0], full_csv_data[i][3]
-                input_tensor = torch.from_numpy(np.array(full_csv_data[(i - 150): i], dtype=np.float32))
+                input_tensor = torch.from_numpy(np.array(full_csv_data[(i - opt.CANDLE_INPUT): i], dtype=np.float32))
                 answer_tensor = torch.from_numpy(np.array([open_price, close_price], dtype=np.float32))
                 self.input_list.append(input_tensor)
                 self.gt_list.append(answer_tensor)
