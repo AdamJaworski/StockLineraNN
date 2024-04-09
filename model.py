@@ -22,37 +22,35 @@ NN is going to output open_price, close_price
 class Model(nn.Module):
     def __init__(self):
         super(Model, self).__init__()
-        self.conv1      = nn.Conv1d(6,  24, 3, padding=1)
-        self.conv2      = nn.Conv1d(24, 32, 3, padding=1)
-        self.drop2      = nn.Dropout(0.3)
+        self.conv1      = nn.Conv1d(5,  32, 3, padding=1)
+        self.batch1     = nn.BatchNorm1d(32)
 
-        self.lstm1      = nn.LSTM(32, 128, batch_first=True)
-        self.lstm2      = nn.LSTM(128, 128, batch_first=True, dropout=0.2)
-        self.lstm3      = nn.LSTM(128, 64, batch_first=True)
-        self.lstm_drop1 = nn.Dropout(0.3)
+        self.lstm1      = nn.LSTM(32, 64, batch_first=False, num_layers=2)
 
-        self.lin1       = nn.Linear(64 * 150, 2400)
+        self.lin1       = nn.Linear(150 * 64, 1200)
         self.lin_drop1  = nn.Dropout(0.4)
-        self.lin2       = nn.Linear(2400, 200)
-        self.lin_drop2  = nn.Dropout(0.4)
-        self.lin3       = nn.Linear(200, 2)
+        self.lin2       = nn.Linear(1200, 2)
+
+        self.prelu1 = nn.PReLU()
+        self.prelu2 = nn.PReLU()
+        self.prelu3 = nn.PReLU()
+
+        self.tanh = nn.Tanh()
 
     def forward(self, x):
         x = x.permute(0, 2, 1)
-        x = F.relu(self.conv1(x))
-        x = F.relu(self.conv2(x))
-        x = self.drop2(x)
+        x = self.conv1(x)
+        x = self.batch1(x)
+        x = self.prelu1(x)
 
         x = x.permute(0, 2, 1)
         x, (hn, cn) = self.lstm1(x)
-        x, (hn, cn) = self.lstm2(x)
-        x, (hn, cn) = self.lstm3(x)
-        x = self.lstm_drop1(x)
-        x = x.reshape(x.shape[0], -1)  # Flatten
+        x = self.prelu2(x)
 
-        x = F.relu(self.lin1(x))
+        x = x.reshape(x.shape[0], -1)  # Flatten
+        x = self.lin1(x)
         x = self.lin_drop1(x)
-        x = F.relu(self.lin2(x))
-        x = self.lin_drop2(x)
-        x = self.lin3(x)
+        x = self.prelu3(x)
+        x = self.lin2(x)
+        x = self.tanh(x)
         return x

@@ -1,5 +1,6 @@
 import sys
 import torch
+import torch.nn as nn
 import torch.optim as optim
 from dataset import Dataset
 from model import Model
@@ -15,7 +16,7 @@ data_csv = r'./Data/'
 
 def train_model(model: Model, loss_fn):
     optimizer         = torch.optim.Adam(model.parameters(), lr=opt.LR)
-    scheduler         = optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min', factor=0.5, patience=15)
+    scheduler         = optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min', factor=0.5, patience=5)
     dataset           = Dataset(data_csv)
     finished_process  = 0
     finished_process_ = 0
@@ -29,6 +30,7 @@ def train_model(model: Model, loss_fn):
     num_trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
     print(f"Training {num_trainable_params} parameters")
 
+    # print(dataset.get(interation[5]))
     while True:
         print(f"Starting epoch: {epoch}")
         random.shuffle(interation)
@@ -56,12 +58,11 @@ def train_model(model: Model, loss_fn):
             if loss.item() > highest_loss:
                 highest_loss = loss.item()
 
-            if loss.item() < 1:
-                print(f"Loss: {loss.item():.2f}, Output: {output_tensor.detach().numpy()}, GT: {correct_tensor.numpy()}")
+            if loss.item() < 0.01:
+                print(f"Loss: {loss.item():.3f}, Output: {output_tensor.detach().numpy()}, GT: {correct_tensor.numpy()}")
 
             if finished_process % opt.PRINT_RESULTS == 0:
                 print_state(epoch, finished_process, running_loss, finished_process_, highest_loss, lowest_loss, optimizer.param_groups[0]['lr'])
-                scheduler.step(running_loss / finished_process_)
                 finished_process_, running_loss, highest_loss, lowest_loss = 0, 0, 0, 10000
 
             if finished_process % opt.SAVE_MODEL_AFTER == 0:
@@ -69,6 +70,7 @@ def train_model(model: Model, loss_fn):
 
         avg_loss_epoch = epoch_loss / dataset.size
         print(f"EOE {epoch}. Avg loss {avg_loss_epoch:.2f}")
+        scheduler.step(avg_loss_epoch)
         epoch_loss = 0.0
         finished_process_, running_loss, highest_loss, lowest_loss = 0, 0, 0, 10000
         finished_process = 0
@@ -77,8 +79,8 @@ def train_model(model: Model, loss_fn):
 
 def print_state(epoch, finished_process, running_loss, finished_process_, highest_loss, lowest_loss, lr):
     loss_file = open(model_path_manager.loss_file, 'a+')
-    summary_message = f"(epoch: {epoch}, finished_process: {finished_process}, lr: {lr}) a_loss: {running_loss/finished_process_:.2f} " \
-                      f"h_loss: {highest_loss:.2f} l_loss: {lowest_loss:.2f}"
+    summary_message = f"(epoch: {epoch}, finished_process: {finished_process}, lr: {lr}) a_loss: {running_loss/finished_process_:.3f} " \
+                      f"h_loss: {highest_loss:.3f} l_loss: {lowest_loss:.3f}"
     print(summary_message)
     loss_file.write(summary_message + '\n')
     loss_file.close()
