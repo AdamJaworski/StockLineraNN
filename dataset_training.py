@@ -7,7 +7,7 @@ import torch
 import utilities
 
 
-class Dataset:
+class DatasetTraining:
     """
     created for csv format:
     time,open,high,low,close,Volume,Color,Plot
@@ -29,17 +29,15 @@ class Dataset:
             for index, row in enumerate(csv_data):
                 if index == 0:
                     continue
-                full_csv_data.append(row[1:6].astype('float32'))
+                full_csv_data.append(row[1:5].astype('float32'))
 
-            rsi = self.get_rsi(full_csv_data)
+            rsi = utilities.get_rsi(full_csv_data)
             for i, candle in enumerate(full_csv_data):
-                candle = candle[:len(candle) - 1]
                 full_csv_data[i] = np.append(candle, rsi[i])
 
             full_csv_data = np.array(full_csv_data[4:], dtype=np.float32)
-
             # struct at this point: { open, high, low, close, rsi }
-            reference_price, full_csv_data = self.normalize_data(full_csv_data)
+            reference_price, full_csv_data = utilities.normalize_data(full_csv_data)
 
             # rn data is in % change in compare to previous candle close price
             # so for example {0,02 0,025 -0,01 0,22 50}
@@ -80,34 +78,5 @@ class Dataset:
     def get(self, index):
         return self.input_dict[index], self.gt_dict[index]
 
-    def get_rsi(self, data) -> list:
-        close_prices = np.array([candle[4] for candle in data])
-        rsi_values = []
-        for i in range(len(close_prices)):
-            rsi_values.append(utilities.calculate_rsi(close_prices[:i + 1]))
 
-        i = 0
-        while rsi_values[i] == -1:
-            i += 1
 
-        y = 0
-        while rsi_values[y] == -1:
-            rsi_values[y] = rsi_values[i]
-            y += 1
-
-        return rsi_values
-
-    def normalize_data(self, data):
-        for i in reversed(range(len(data))):
-            if i == 0:
-                continue
-            reference_candle = data[i - 1]
-            candle_to_normalize = data[i]
-            new_candle = (candle_to_normalize - reference_candle[3]) / reference_candle[3]
-            new_candle = new_candle[:len(new_candle) - 1]
-            new_candle = np.append(new_candle, candle_to_normalize[len(candle_to_normalize) - 1])
-            data[i] = new_candle.astype(np.float16)
-
-        reference_price = data[0][3]
-        data = data[1:]
-        return reference_price, data

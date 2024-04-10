@@ -20,6 +20,7 @@ with open(file_path, 'r') as file:
 
 
 def plot_data(data):
+    global a_loss, h_loss, l_loss
     # Re-plotting with the corrected data
     iterations = [*range(0, len(data)*opt.PRINT_RESULTS, opt.PRINT_RESULTS)]
 
@@ -27,7 +28,7 @@ def plot_data(data):
     data     = data[1:]
 
     plt.figure(figsize=(14, 8))
-    plt.plot(iterations, data, label='a_loss', marker='o')
+    plt.plot(iterations, data, label='loss', marker='o')
     # plt.plot(iterations, h_loss, label='h_loss', marker='x')
     # plt.plot(iterations, l_loss, label='l_loss', marker='^')
     plt.xlabel('Iterations')

@@ -2,7 +2,7 @@ import sys
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from dataset import Dataset
+from dataset_training import DatasetTraining
 from model import Model
 from custom_loss import CustomLoss
 from train_options import opt
@@ -11,13 +11,13 @@ import pathlib
 from datetime import datetime
 import random
 
-data_csv = r'./Data/'
+data_csv = r'./DataTraining/'
 
 
 def train_model(model: Model, loss_fn):
     optimizer         = torch.optim.Adam(model.parameters(), lr=opt.LR)
     scheduler         = optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min', factor=0.5, patience=5)
-    dataset           = Dataset(data_csv)
+    dataset           = DatasetTraining(data_csv)
     finished_process  = 0
     finished_process_ = 0
     epoch             = opt.STARTING_EPOCH
@@ -104,6 +104,28 @@ if __name__ == "__main__":
 
     if opt.CONTINUE_LEARNING:
         model.load_state_dict(torch.load(model_path_manager.root_path / 'latest.pth'))
+    else:
+        for module in model.modules():
+            if isinstance(module, nn.Conv1d):
+                nn.init.kaiming_normal_(module.weight, mode='fan_in', nonlinearity='relu')
+                if module.bias is not None:
+                    nn.init.constant_(module.bias, 0)
+            elif isinstance(module, nn.LSTM):
+                for name, param in module.named_parameters():
+                    if 'weight_ih' in name:
+                        nn.init.xavier_uniform_(param.data)
+                    elif 'weight_hh' in name:
+                        nn.init.orthogonal_(param.data)
+                    elif 'bias' in name:
+                        param.data.fill_(0)
+                        # Implement LSTM bias initialization for forget gate
+                        n = param.size(0)
+                        start, end = n//4, n//2
+                        param.data[start:end].fill_(1.)
+            elif isinstance(module, nn.Linear):
+                nn.init.xavier_uniform_(module.weight)
+                if module.bias is not None:
+                    nn.init.constant_(module.bias, 0)
 
     loss_file = open(model_path_manager.loss_file, 'a+')
     dt_string = datetime.now().strftime("%d/%m/%Y %H:%M:%S")

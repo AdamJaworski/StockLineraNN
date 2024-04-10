@@ -24,7 +24,7 @@ class Model(nn.Module):
         super(Model, self).__init__()
         self.conv1 = nn.Conv1d(5, 32, 3, padding=1)
 
-        self.lstm1 = nn.LSTM(32, 64, batch_first=True, num_layers=2)
+        self.lstm1 = nn.LSTM(32, 64, batch_first=True, num_layers=3)
 
         self.lin1 = nn.Linear(64, 2)
 
@@ -55,4 +55,4 @@ class Model(nn.Module):
         x = self.lin1(x)
         x = self.tanh(x)
 
-        return x[0]
+        return x[0][0]

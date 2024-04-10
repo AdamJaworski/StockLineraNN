@@ -19,3 +19,41 @@ def calculate_rsi(data, window=14):
     rsi = 100 - (100 / (1 + rs)) if avg_loss != 0 else 100  # RSI is 100 if avg_loss is 0
 
     return rsi
+
+
+def get_rsi(data, data_set=True) -> list:
+    if data_set:
+        close_prices = np.array([candle[3] for candle in data])
+    else:
+        close_prices = data
+
+    rsi_values = []
+    for i in range(len(close_prices)):
+        rsi_values.append(calculate_rsi(close_prices[:i + 1]))
+
+    i = 0
+    while rsi_values[i] == -1:
+        i += 1
+
+    y = 0
+    while rsi_values[y] == -1:
+        rsi_values[y] = rsi_values[i]
+        y += 1
+
+    return rsi_values
+
+
+def normalize_data(data):
+    for i in reversed(range(len(data))):
+        if i == 0:
+            continue
+        reference_candle = data[i - 1]
+        candle_to_normalize = data[i]
+        new_candle = (candle_to_normalize - reference_candle[3]) / reference_candle[3]
+        new_candle = new_candle[:len(new_candle) - 1]
+        new_candle = np.append(new_candle, candle_to_normalize[len(candle_to_normalize) - 1])
+        data[i] = new_candle.astype(np.float16)
+
+    reference_price = data[0][3]
+    data = data[1:]
+    return reference_price, data
