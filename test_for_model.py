@@ -40,7 +40,8 @@ def test_model(model: Model):
     nn_output = nn_output.reshape(nn_output.size, 1)
     price_base_nn = price_base_nn.reshape(price_base_nn.size, 1)
     iterations = [*range(compare_list.size)]
-    to_rsi_list = [x[0] for x in gt_list]
+    to_rsi_list = [price_base_gt[i*2 + 1] for i in range(int(len(price_base_gt) / 2))]
+    to_rsi_list = np.array(to_rsi_list).flatten()
     rsi = utilities.get_rsi(to_rsi_list, False)
 
     plt.figure(figsize=(14, 8))
@@ -56,8 +57,8 @@ def test_model(model: Model):
     gs = gridspec.GridSpec(4, 1)
 
     ax1 = plt.subplot(gs[:3, 0])
-    ax1.plot(iterations, price_base_gt, label='gt', marker='o')
-    ax1.plot(iterations, price_base_nn, label='output', marker='x')
+    ax1.plot(iterations, price_base_gt, label='gt', color='blue')
+    ax1.plot(iterations, price_base_nn, label='output', color='orange')
     ax1.set_xlabel('Iterations')
     ax1.set_ylabel('Price')
     ax1.set_title('Price over Iterations')
@@ -65,7 +66,7 @@ def test_model(model: Model):
     ax1.grid(True)
 
     ax2 = plt.subplot(gs[3, 0])
-    ax2.plot([*range(len(rsi))], rsi, label='RSI', marker='*')
+    ax2.plot([*range(len(rsi))], rsi, label='RSI', color='purple')
     ax2.set_xlabel('Iterations')
     ax2.set_ylabel('RSI')
     ax2.set_title('RSI')

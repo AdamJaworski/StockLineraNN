@@ -1,4 +1,6 @@
 import sys
+
+import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -41,6 +43,7 @@ def train_model(model: Model, loss_fn):
 
             input_tensor = input_tensor.unsqueeze(0)
             output_tensor = model(input_tensor)
+
             output_tensor = output_tensor.squeeze(0)
             loss = loss_fn(output_tensor, correct_tensor)
 
@@ -101,7 +104,7 @@ def save_model(model_instance, name_of_save: str):
 if __name__ == "__main__":
     model = Model()
     model_path_manager = PathManager(opt.MODEL)
-
+    torch.autograd.set_detect_anomaly(True)
     if opt.CONTINUE_LEARNING:
         model.load_state_dict(torch.load(model_path_manager.root_path / 'latest.pth'))
     else:
