@@ -1,10 +1,9 @@
 import os
 import sys
-import time
-from train_options import opt
+from settings.global_options import opt
 import numpy as np
 import torch
-import utilities
+from utlities import utilities
 
 
 class DatasetTraining:
@@ -22,10 +21,10 @@ class DatasetTraining:
         self.gt_list    = []
         print("Creating data set...")
         csv_list = os.listdir(data_path)
-
+        test = 0
         for csv in csv_list:
             full_csv_data = []
-            csv_data = np.loadtxt(data_path + csv, delimiter=',', dtype=str)
+            csv_data = np.loadtxt(data_path / csv, delimiter=',', dtype=str)
             for index, row in enumerate(csv_data):
                 if index == 0:
                     continue
@@ -33,7 +32,9 @@ class DatasetTraining:
 
             rsi = utilities.get_rsi(full_csv_data)
             for i, candle in enumerate(full_csv_data):
-                full_csv_data[i] = np.append(candle, rsi[i])
+                if rsi[i] > 100 or rsi[i] < 0:
+                    print(csv, rsi, candle)
+                full_csv_data[i] = np.append(candle, rsi[i] / 100)
 
             full_csv_data = np.array(full_csv_data[4:], dtype=np.float32)
             # struct at this point: { open, high, low, close, rsi }
@@ -44,6 +45,7 @@ class DatasetTraining:
             # only rsi is in range 0-100, rest is in %
 
             open_price, close_price = full_csv_data[opt.CANDLE_INPUT][0], full_csv_data[opt.CANDLE_INPUT][3]
+
             input_tensor = torch.from_numpy(np.array(full_csv_data[0:opt.CANDLE_INPUT], dtype=np.float32))
             answer_tensor = torch.from_numpy(np.array([open_price, close_price], dtype=np.float32))
             self.input_list.append(input_tensor)
@@ -77,6 +79,3 @@ class DatasetTraining:
 
     def get(self, index):
         return self.input_dict[index], self.gt_dict[index]
-
-
-

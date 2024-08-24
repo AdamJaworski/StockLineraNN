@@ -1,6 +1,6 @@
 import numpy as np
 import pandas as pd
-
+import torch_directml
 
 def calculate_rsi(data, window=14):
     if len(data) < 6:
@@ -57,3 +57,11 @@ def normalize_data(data):
     reference_price = data[0][3]
     data = data[1:]
     return reference_price, data
+
+
+def is_directml_available():
+    try:
+        dml = torch_directml.device()
+        return True
+    except Exception as e:
+        return False

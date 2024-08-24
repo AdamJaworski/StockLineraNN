@@ -1,12 +1,13 @@
+"""
+No best version - all bad , dataset too small?
+"""
+
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
-from train_options import opt
-
 
 class Model(nn.Module):
     f"""
-    NN as input will take a matrix of {opt.CANDLE_INPUT} candles and predict next candle
+    NN as input will take a matrix of 100 candles and predict next candle
     Candle is a struct: [open_price, close_price, max_price, low_price, RSI]
     so matrix should look like this:
 
@@ -22,26 +23,20 @@ class Model(nn.Module):
 
     def __init__(self):
         super(Model, self).__init__()
-        self.lstm1 = nn.LSTM(5, 48, batch_first=True, num_layers=3)
 
-        self.lin1 = nn.Linear(48, 2)
-        self.lin2 = nn.Linear(3 * 2, 2)
-
-        self.prelu1 = nn.PReLU()
-        self.tanh = nn.Tanh()
+        self.lin1 = nn.Linear(500, 3000)
+        self.lin2 = nn.Linear(3000, 600)
+        self.lin3 = nn.Linear(600, 200)
+        self.lin4 = nn.Linear(200, 2)
 
     def forward(self, x):
-        hidden_state = None
-
-        for i in range(x.size(1)):
-            candle = x[:, i, :].unsqueeze(1)
-            _, hidden_state = self.lstm1(candle, hidden_state)
-
-        lstm_output = hidden_state[0].squeeze(0)
-        x = self.prelu1(lstm_output)
-
-        x = self.lin1(x)
         x = torch.flatten(x)
-        x = self.lin2(x)
-        x = self.tanh(x)
-        return x
+        x = self.sigmoid(self.lin1(x), 60)
+        x = self.sigmoid(self.lin2(x), 50)
+        x = self.sigmoid(self.lin3(x), 100)
+        x = self.lin4(x)
+        return self.sigmoid(x, 10)
+
+
+    def sigmoid(self, x, factor):
+        return 2 * (1 / (1 + torch.exp(-x/factor))) -1
