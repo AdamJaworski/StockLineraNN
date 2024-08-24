@@ -1,18 +1,21 @@
+import os
+from model.model import Model
 import torch
 import matplotlib.gridspec as gridspec
-import utilities
-from dataset_test import DatasetTest
-from model import Model
-from train_options import opt
-from PathManager import PathManager
+from utlities import utilities
+from dataset.dataset_test import DatasetTest
+from model.model import Model
+from settings.global_options import opt
 import numpy as np
 import matplotlib.pyplot as plt
 
-data_csv = r'./DataTest/cdr/'
 
+def test_graph(model_path_manager, state, data_file):
+    data_dir = './Data/DataTraining/'
+    dataset  = DatasetTest(data_dir + data_file)
+    model = Model()
+    model.load_state_dict(torch.load(model_path_manager.state_path / state))
 
-def test_model(model: Model):
-    dataset             = DatasetTest(data_csv)
     base_price, gt_list = dataset.get()
 
     nn_output    = np.array([[candle[0], candle[3]] for candle in gt_list[:opt.CANDLE_INPUT]])
@@ -35,6 +38,24 @@ def test_model(model: Model):
 
     price_base_nn = np.array(price_base_nn)
     price_base_gt = np.array(price_base_gt)
+
+    # Remove NaN or Inf values
+    price_base_gt = price_base_gt[~np.isnan(price_base_gt) & ~np.isinf(price_base_gt)]
+    price_base_nn = price_base_nn[~np.isnan(price_base_nn) & ~np.isinf(price_base_nn)]
+
+    # Ensure both arrays have variance
+    if np.var(price_base_gt) == 0 or np.var(price_base_nn) == 0:
+        print("One of the arrays has zero variance. Correlation cannot be calculated.")
+    else:
+        # Ensure both arrays have the same length
+        min_length = min(len(price_base_gt), len(price_base_nn))
+        price_base_gt = price_base_gt[:min_length]
+        price_base_nn = price_base_nn[:min_length]
+
+        # Calculate correlation
+        correlation_matrix = np.corrcoef(price_base_gt, price_base_nn)
+        print(f"Correlation coefficient: {correlation_matrix[0, 1]}")
+
     compare_list = compare_list.reshape(compare_list.size, 1)
     price_base_gt = price_base_gt.reshape(price_base_gt.size, 1)
     nn_output = nn_output.reshape(nn_output.size, 1)
@@ -75,12 +96,3 @@ def test_model(model: Model):
 
     plt.tight_layout()
     plt.show()
-
-
-if __name__ == "__main__":
-    model = Model()
-    model_path_manager = PathManager(opt.MODEL)
-
-    model.load_state_dict(torch.load(model_path_manager.root_path / 'latest.pth'))
-
-    test_model(model)
