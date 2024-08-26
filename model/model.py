@@ -1,6 +1,7 @@
 """
-No best version - all bad , dataset too small?
+
 """
+import sys
 
 import torch
 import torch.nn as nn
@@ -24,19 +25,27 @@ class Model(nn.Module):
     def __init__(self):
         super(Model, self).__init__()
 
-        self.lin1 = nn.Linear(500, 3000)
-        self.lin2 = nn.Linear(3000, 600)
-        self.lin3 = nn.Linear(600, 200)
-        self.lin4 = nn.Linear(200, 2)
+        self.conv1 = nn.Conv1d(100, 600, 5)
+
+        self.lin1 = nn.Linear(500, 1800)
+        self.lin2 = nn.Linear(1800, 600)
+        self.lin3 = nn.Linear(600, 3)
+
+        self.softmax = nn.Softmax(dim=0)
 
     def forward(self, x):
-        x = torch.flatten(x)
-        x = self.sigmoid(self.lin1(x), 60)
-        x = self.sigmoid(self.lin2(x), 50)
-        x = self.sigmoid(self.lin3(x), 100)
-        x = self.lin4(x)
-        return self.sigmoid(x, 10)
+        y = self.conv1(x)
+        y = self.sigmoid(torch.flatten(y), 150)
 
+        x = torch.flatten(x)
+        x = self.lin1(x)
+        x = self.sigmoid(self.lin2(x), 150)
+
+        x = self.lin3(x + y)
+        return self.softmax(x)
 
     def sigmoid(self, x, factor):
+        """
+        changes x into values between -1, 1
+        """
         return 2 * (1 / (1 + torch.exp(-x/factor))) -1

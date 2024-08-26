@@ -1,7 +1,6 @@
 import os
 import torch
 import numpy as np
-from settings.global_options import opt
 from model.model import Model
 from dataset.dataset_test import DatasetTest
 

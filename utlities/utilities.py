@@ -1,47 +1,26 @@
 import numpy as np
 import pandas as pd
 import torch_directml
+from numba import njit
 
-def calculate_rsi(data, window=14):
-    if len(data) < 6:
-        return -1
-    if len(data) < window + 1:
-        window = len(data)
+def get_rsi_for_data(data, window=14):
+    assert len(data) == window, "Wrong data size to calculate rsi"
 
-    delta = np.diff(data)
+    try:
+        delta = np.diff(data)
+    except Exception as e:
+        print(data)
+        raise e
     gain = np.where(delta > 0, delta, 0)
     loss = np.where(delta < 0, -delta, 0)
 
-    avg_gain = np.average(gain[-window:])  # Calculate average gain for last 'window' periods
-    avg_loss = np.average(loss[-window:])  # Calculate average loss for last 'window' periods
+    avg_gain = np.average(gain)
+    avg_loss = np.average(loss)
 
-    rs = avg_gain / avg_loss if avg_loss != 0 else 0  # Avoid division by zero
-    rsi = 100 - (100 / (1 + rs)) if avg_loss != 0 else 100  # RSI is 100 if avg_loss is 0
+    rs = avg_gain / avg_loss if avg_loss != 0 else 0
+    rsi = 100 - (100 / (1 + rs)) if avg_loss != 0 else 100
 
     return rsi
-
-
-def get_rsi(data, data_set=True) -> list:
-    if data_set:
-        close_prices = np.array([candle[3] for candle in data])
-    else:
-        close_prices = data
-
-    rsi_values = []
-    for i in range(len(close_prices)):
-        rsi_values.append(calculate_rsi(close_prices[:i + 1]))
-
-    i = 0
-    while rsi_values[i] == -1:
-        i += 1
-
-    y = 0
-    while rsi_values[y] == -1:
-        rsi_values[y] = rsi_values[i]
-        y += 1
-
-    return rsi_values
-
 
 def normalize_data(data):
     for i in reversed(range(len(data))):

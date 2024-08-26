@@ -3,13 +3,10 @@ from dataset.dataset_test import DatasetTest
 import torch
 import numpy as np
 from model.model import Model
-from settings.global_options import opt
 
-def test_correlation(model_path_manager, state):
+def test_correlation(model):
     data_dir = './Data/DataTraining/'
     list_of_data = os.listdir(data_dir)
-    model = Model()
-    model.load_state_dict(torch.load(model_path_manager.state_path / state))
     total_correlation = 0
 
     for data in list_of_data:

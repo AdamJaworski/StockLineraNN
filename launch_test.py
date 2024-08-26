@@ -1,23 +1,23 @@
-import os
 from settings.test_options import args
-from PathManager import PathManager
-import shutil
+from settings.common_options import common_args
+from launch_funcs import *
 
 def main():
-    if not args.correlation and not args.graph and not args.states:
-        raise RuntimeError("You need to select test type")
+    assert args.correlation or args.graph or args.states or args.trend, "You need to select test type"
 
-    model_path_manager = PathManager(args.model)
+    init_model_path_manager()
+    load_model_file()
 
-    if os.path.exists(model_path_manager.model_file):
-        os.remove('./model/model.py')
-        shutil.copy(model_path_manager.model_file, './model/model.py')
-    else:
-        UserWarning("Didn't locate model.py in model files")
+    from model.model import Model
+    model = Model()
+
+    set_device()
+    common_args.load_settings = True
+    load_model_settings()
 
     state_name = ""
     if args.epoch != -1:
-        for state in os.listdir(model_path_manager.state_path):
+        for state in os.listdir(global_variables.model_path_manager.state_path):
             if f"EOE_{args.epoch}_" in state:
                 state_name = state
                 break
@@ -27,26 +27,34 @@ def main():
     if state_name == "":
         raise RuntimeError("Didn't find state from selected epoch")
 
+    model.load_state_dict(torch.load(global_variables.model_path_manager.state_path / state_name))
+
     if args.correlation:
-        print(f"Launching correlation test for model: {args.model} with state_dict: {state_name}")
+        print(f"Launching correlation test for model: {common_args.model} with state_dict: {state_name}")
         from test_module.test_correlation import test_correlation
-        test_correlation(model_path_manager, state_name)
+        test_correlation(model)
 
     if args.graph:
         assert args.data != "", RuntimeError("You need to provide data file name for graph test")
 
-        print(f"Launching correlation test for model: {args.model} with state_dict: {state_name}")
+        print(f"Launching correlation test for model: {common_args.model} with state_dict: {state_name}")
         from test_module.test_graph import test_graph
-        test_graph(model_path_manager, state_name, args.data)
+        test_graph(model, args.data)
 
     if args.states:
         assert args.data != "", RuntimeError("You need to provide data file name for states test")
         if args.epoch != -1:
             RuntimeWarning("Don't provide epoch for state test")
 
-        print(f"Launching states test for model: {args.model} with data: {args.data}")
+        print(f"Launching states test for model: {common_args.model} with data: {args.data}")
         from  test_module.test_states import test_states
-        test_states(model_path_manager, args.data)
+        test_states(model, args.data)
+
+    if args.trend:
+        print(f"Launching trend test for model: {common_args.model} with state_dict: {state_name}")
+        from test_module.test_trend import test_trend
+        test_trend(model, args.data, state_name)
+
 
 
 if __name__ == "__main__":

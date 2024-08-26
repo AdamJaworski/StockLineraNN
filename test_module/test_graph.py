@@ -5,16 +5,13 @@ import matplotlib.gridspec as gridspec
 from utlities import utilities
 from dataset.dataset_test import DatasetTest
 from model.model import Model
-from settings.global_options import opt
 import numpy as np
 import matplotlib.pyplot as plt
 
 
-def test_graph(model_path_manager, state, data_file):
+def test_graph(model, data_file):
     data_dir = './Data/DataTraining/'
     dataset  = DatasetTest(data_dir + data_file)
-    model = Model()
-    model.load_state_dict(torch.load(model_path_manager.state_path / state))
 
     base_price, gt_list = dataset.get()
 
