@@ -1,5 +1,8 @@
-tst = [*range(50)]
+import torch
+import torch_directml
 
-print(tst)
-print(tst[1:15])
-print(tst[15:16])
+device = torch_directml.device()
+model = torch.nn.Linear(5, 5)
+
+model.to(device)
+print("end")

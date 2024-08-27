@@ -1,9 +1,8 @@
 from dataset.dataset_class import Dataset
-from utlities import utilities
 from settings import global_variables
 from dataset.file_deconstructor import File
 import torch
-import numpy as np
+import gc
 import os
 import sys
 
@@ -36,8 +35,8 @@ class Trend(Dataset):
                 output_array = EVEN
 
 
-            input_tensor = torch.tensor(input_array, dtype=global_variables.TENSOR_DATA_TYPE).to(global_variables.device)
-            answer_tensor = torch.tensor(output_array, dtype=global_variables.TENSOR_DATA_TYPE).to(global_variables.device)
+            input_tensor = torch.tensor(input_array, dtype=global_variables.TENSOR_DATA_TYPE, device=global_variables.device)
+            answer_tensor = torch.tensor(output_array, dtype=global_variables.TENSOR_DATA_TYPE, device=global_variables.device)
             self.input_list.append(input_tensor)
             self.gt_list.append(answer_tensor)
 
@@ -46,7 +45,7 @@ class Trend(Dataset):
 
             i = 1
             while i + global_variables.model_settings["candle_input"] + global_variables.model_settings["forward_candle_prediction"] < data_from_file.get_size():
-                input_tensor = torch.tensor(data_from_file.get_candles()[i:global_variables.model_settings["candle_input"] + i]).to(global_variables.device)
+                input_tensor = torch.tensor(data_from_file.get_candles()[i:global_variables.model_settings["candle_input"] + i], dtype=global_variables.TENSOR_DATA_TYPE, device=global_variables.device)
                 price_change = data_from_file.candle_raw[global_variables.model_settings["candle_input"] + global_variables.model_settings["forward_candle_prediction"] + i][3]  / data_from_file.candle_raw[global_variables.model_settings["candle_input"] + i][3]
 
                 if price_change < 0.99:
@@ -56,7 +55,7 @@ class Trend(Dataset):
                 else:
                     output_array = EVEN
 
-                answer_tensor = torch.tensor(output_array, dtype=global_variables.TENSOR_DATA_TYPE).to(global_variables.device)
+                answer_tensor = torch.tensor(output_array, dtype=global_variables.TENSOR_DATA_TYPE, device=global_variables.device)
                 self.input_list.append(input_tensor)
                 self.gt_list.append(answer_tensor)
 
@@ -64,12 +63,6 @@ class Trend(Dataset):
                 self.total_size += sys.getsizeof(answer_tensor)
 
                 i += 1
-
-        self.input_dict = {i: k for i, k in enumerate(self.input_list)}
-        self.gt_dict = {i: k for i, k in enumerate(self.gt_list)}
-
-        self.total_size += sys.getsizeof(self.input_dict)
-        self.total_size += sys.getsizeof(self.gt_dict)
 
         if len(self.input_list) == len(self.gt_list):
             self.size = len(self.gt_list)

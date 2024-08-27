@@ -1,7 +1,5 @@
 import numpy as np
-import pandas as pd
 import torch_directml
-from numba import njit
 
 def get_rsi_for_data(data, window=14):
     assert len(data) == window, "Wrong data size to calculate rsi"
@@ -36,11 +34,3 @@ def normalize_data(data):
     reference_price = data[0][3]
     data = data[1:]
     return reference_price, data
-
-
-def is_directml_available():
-    try:
-        dml = torch_directml.device()
-        return True
-    except Exception as e:
-        return False
